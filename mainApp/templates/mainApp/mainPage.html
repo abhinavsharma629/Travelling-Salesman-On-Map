@@ -1,0 +1,96 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="mdc-typography">
+
+  <head>
+    <title>Hello User</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+      #myDiv {
+        position: absolute;
+        top: 30%;
+        left: 50%;
+        width: 30em;
+        height: 18em;
+        margin-top: -9em;
+        /*set to a negative number 1/2 of your height*/
+        margin-left: -15em;
+        /*set to a negative number 1/2 of your width*/
+      }
+
+      .btn11 {
+        background-color: RoyalBlue;
+        border: none;
+        color: black;
+        padding: 8px 16px;
+        font-size: 16px;
+        border-radius: 12px;
+        cursor: pointer;
+      }
+
+      /* Darker background on mouse-over */
+
+      .btn11:hover {
+        background-color: dodgerblue;
+      }
+
+      .btn12 {
+        background-color: red;
+        border: none;
+        color: black;
+        padding: 8px 16px;
+        font-size: 16px;
+        border-radius: 12px;
+        cursor: pointer;
+      }
+
+      /* Darker background on mouse-over */
+
+      .btn12:hover {
+        background-color: red;
+      }
+    </style>
+  </head>
+
+  <body>
+
+
+
+    {% include 'mainApp/navbar.html' %}
+
+
+  </body>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+  <!-- Main Controller -->
+  <script src="{% static 'js/mainController.js' %}"></script>
+
+  <!-- Profile -->
+  <script src="{% static 'js/profile.js' %}"></script>
+
+  <!-- History -->
+  <script src="{% static 'js/history.js' %}"></script>
+
+  <script>
+    $(function() {
+
+      profile();
+      $("#load").hide();
+      $("#main1111").removeClass("blur");
+
+    })
+  </script>
+
+</html>

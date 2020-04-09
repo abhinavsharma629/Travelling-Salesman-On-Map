@@ -3,16 +3,215 @@
 <html lang="en" class="mdc-typography">
 
   <head>
-    <title>Hello User</title>
-    <meta charset="utf-8">
+    <title>Select Routes</title>
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js'></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- Bing Maps -->
+    <script type='text/javascript'>
+      var map, map1, infobox, mapoptions, curr_postion = 0,
+        directionsManager,
+        curr_title = 65;
+      var pinInfobox = null;
+      var positions_object = {}
+
+      function GetMap() {
+        map = new Microsoft.Maps.Map('#myMap', {});
+
+
+        //Create an infobox at the center of the map but don't show it.
+        infobox = new Microsoft.Maps.Infobox(map.getCenter(), {
+          visible: false
+        });
+
+        // Adding suggestions
+        Microsoft.Maps.loadModule('Microsoft.Maps.AutoSuggest', function() {
+          var manager = new Microsoft.Maps.AutosuggestManager({
+            map: map
+          });
+          manager.attachAutosuggest('#searchBox', '#searchBoxContainer', selectedSuggestion);
+        });
+
+        //Assign the infobox to a map instance.
+        infobox.setMap(map);
+
+
+        //Add a click event handler to the pushpin.
+        Microsoft.Maps.Events.addHandler(map, 'click', pushpin);
+
+        // Request the user's location and set a default pin there
+        navigator.geolocation.getCurrentPosition(function(position) {
+
+          var loc = new Microsoft.Maps.Location(
+            position.coords.latitude,
+            position.coords.longitude);
+
+          //Add a pushpin at the user's location.
+          var pin = new Microsoft.Maps.Pushpin(loc, {
+            'draggable': false
+          });
+
+          setPin(pin, position.coords.latitude, position.coords.longitude)
+
+
+          //Center the map on the user's location.
+          map.setView({
+            center: loc
+          });
+        })
+
+
+
+      }
+
+
+      // Setting pin details and updating values
+      function setPin(pin, latitude, longitude) {
+
+        //Store some metadata with the pushpin.
+        pin.metadata = {
+          title: "Point : " + String.fromCharCode(curr_title),
+          position: curr_postion,
+          description: "Latitude: " + latitude + " , Longitude: " + longitude,
+        };
+
+        let curr_postion_object = {
+          title: String.fromCharCode(curr_title),
+          position: curr_postion,
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude),
+        }
+
+        positions_object[curr_postion] = curr_postion_object
+        console.log(positions_object)
+
+        curr_postion += 1;
+        curr_title += 1;
+
+        pin.setOptions({
+          enableHoverStyle: true,
+          enableClickedStyle: true
+        });
+
+        //Add a click event handler to the pushpin.
+        Microsoft.Maps.Events.addHandler(pin, 'mouseover', pushpinHovered);
+        Microsoft.Maps.Events.addHandler(pin, 'mouseout', pushpinHoverOut);
+        Microsoft.Maps.Events.addHandler(pin, 'click', deletepinClicked);
+
+        map.entities.push(pin);
+
+      }
+
+      function pushpin(e) {
+        if (e.targetType === "map") {
+          console.log("adding pushpin")
+
+          //Make sure the infobox has metadata to display.
+          var point = new Microsoft.Maps.Point(e.getX(), e.getY());
+          var locTemp = e.target.tryPixelToLocation(point);
+          var location = new Microsoft.Maps.Location(locTemp.latitude, locTemp.longitude);
+          var pin = new Microsoft.Maps.Pushpin(location, {
+            'draggable': false
+          });
+
+          // Set pin details and update counters
+          setPin(pin, locTemp.latitude.toString().substring(0, 10), locTemp.longitude.toString().substring(0, 10))
+        }
+      }
+
+      function pushpinHoverOut(e) {
+        //Make sure the infobox has metadata to display.
+        if (e.target.metadata) {
+          // Hide pin
+          infobox.setOptions({
+            visible: false
+          });
+        }
+      }
+
+      function pushpinHovered(e) {
+        //Make sure the infobox has metadata to display.
+        if (e.target.metadata) {
+          //Set the infobox options with the metadata of the pushpin.
+          infobox.setOptions({
+            location: e.target.getLocation(),
+            title: e.target.metadata.title,
+            description: e.target.metadata.description,
+            visible: true
+          });
+        }
+      }
+
+      function deletepinClicked(e) {
+        console.log("deleting pin")
+        map.entities.removeAt(e.target.metadata.position); // delete curr pin
+        update_positions_object(e.target.metadata.position)
+      }
+
+      function update_positions_object(pos) {
+        curr_title -= 1;
+        curr_postion -= 1;
+        let temp_positions_objects = positions_object // Temp copy of positions_object
+        let c = 0;
+        // Updating dict values and pin metadata
+        for (let i in positions_object) {
+          if (positions_object[i]['position'] < pos) {
+            let temp = temp_positions_objects[i];
+            temp_positions_objects[c] = temp
+            c += 1;
+            continue;
+          } else if (positions_object[i]['position'] === pos) {
+            delete temp_positions_objects[i]
+          } else {
+            let temp = temp_positions_objects[i];
+            delete temp_positions_objects[i]; // delete curr obj
+
+            // Updating pin metadata
+            let pin = map.entities.get(temp.position - 1);
+            pin.metadata = {
+              title: "Point : " + String.fromCharCode(temp.title.codePointAt(0) - 1),
+              position: c - 1,
+            };
+
+            temp_positions_objects[c - 1] = {
+              title: String.fromCharCode(temp.title.codePointAt(0) - 1),
+              position: c - 1,
+              latitude: temp.latitude,
+              longitude: temp.longitude,
+            }
+          }
+          c += 1;
+        }
+        positions_object = temp_positions_objects; // update positions_object
+      }
+
+      // Search Suggestions and add locations
+      function selectedSuggestion(result) {
+
+        //Show the suggestion as a pushpin and center map over it.
+
+        var loc = new Microsoft.Maps.Location(
+          result.location.latitude,
+          result.location.longitude);
+
+        //Add a pushpin at the user's location.
+        var pin = new Microsoft.Maps.Pushpin(loc, {
+          'draggable': false
+        });
+
+        setPin(pin, result.location.latitude, result.location.longitude);
+        map.setView({
+          bounds: result.bestView
+        });
+
+      }
+    </script>
+    <script type='text/javascript' src='http://www.bing.com/api/maps/mapcontrol?callback=GetMap&key=AjfD6rIOrZC9XPdpoPVkrafHtwOubye2KUUoO_gqj9Q3cpaVQwxTwr-bJ9YUb7Q_' async defer></script>
 
     <style>
       #myDiv {
@@ -58,21 +257,123 @@
       .btn12:hover {
         background-color: red;
       }
+
+      /* History Page Cards */
+
+      @import url("https://fonts.googleapis.com/css?family=Roboto:400,400i,700");
+      .card {
+        background: #fff;
+        border-radius: 5px;
+        margin-left: 5%;
+        box-shadow: 0px 1px 5px rgba(0, 0, 0, 0.5);
+        max-width: 90%;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        padding: 1.5rem 1.5rem 1.5rem 7rem;
+      }
+
+      .card h2 {
+        margin: 0;
+        margin-left: 5%;
+        padding: 0;
+      }
+
+      .card .title {
+        padding: 0.25rem 0;
+        margin-left: 5%;
+        border-bottom: 2px solid #dddfee;
+      }
+
+      .card .desc {
+        padding: 0.5rem 0;
+        margin-left: 5%;
+        order: 99;
+      }
+
+      .card .actions {
+        order: 100;
+        margin-left: 5%;
+        padding: 0.5rem 0;
+      }
+
+      .card .profile-img {
+        width: 150px;
+        height: 150px;
+        margin: 0 auto;
+        background: #f00;
+        position: absolute;
+        left: -30px;
+        border-radius: 100px;
+        border: 5px solid #fff;
+        transition: all 0.3s ease-in-out;
+      }
+
+      .card .profile-img::after {
+        width: 150px;
+        height: 150px;
+        background: #f00;
+        position: absolute;
+        left: 0px;
+        top: -5px;
+        border-radius: 100px;
+        border: 5px solid #fff;
+        content: '';
+        z-index: -1;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+      }
+
+      .card .profile-img:hover {
+        left: -85px;
+      }
+
+      .card button {
+        font-family: Roboto, sans-serif;
+        border: none;
+        background-color: transparent;
+        font-size: 16px;
+        padding: 0 5px 0;
+        cursor: pointer;
+      }
+
+      .card button:hover {
+        color: #f00;
+      }
+
+      .card button#close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+      }
+
+      .card button#close1 {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+      }
+
+      .fas.fa-heart {
+        color: #f00;
+      }
     </style>
   </head>
 
   <body>
-
-
-
     {% include 'mainApp/navbar.html' %}
 
+    <input type="hidden" id="csrf_token" value="{{ csrf_token }}" />
 
+    <form id="ninja" style="display:none;" action="http://127.0.0.1:8000/historyManagement" method="POST">
+      {% csrf_token %}
+      <input id="points" type="hidden" name="points" value="{}">
+    </form>
   </body>
 
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js'></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment.js"></script>
 
   <!-- Main Controller -->
   <script src="{% static 'js/mainController.js' %}"></script>
@@ -85,12 +386,30 @@
 
   <script>
     $(function() {
-
       profile();
       $("#load").hide();
       $("#main1111").removeClass("blur");
-
     })
   </script>
 
 </html>
+
+<!-- CSRF HEADER SETUP -->
+<!-- <script>
+$(function(){
+  var csrftoken = $("#csrf_token").val()
+
+  function csrfSafeMethod(method) {
+      // these HTTP methods do not require CSRF protection
+      return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+  }
+  // set csrf header
+  $.ajaxSetup({
+      beforeSend: function(xhr, settings) {
+          if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+              xhr.setRequestHeader("X-CSRFToken", csrftoken);
+          }
+      }
+  });
+})
+</script> -->

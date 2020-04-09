@@ -4,17 +4,21 @@ from django.contrib.auth.models import User
 import json
 
 def add_plot_or_400(request):
-    params=request.data
+    params=request.POST
     obj=PlotHistory.objects.create(user=request.user, points=json.loads(params['points']))
     obj.save()
-    return [event,status.HTTP_201_CREATED]
+    return [obj,status.HTTP_201_CREATED]
 
 
 def delete_plot_or_404(request):
-    params=request.data
+    params=request.body
+    params = json.loads(params.decode('utf-8'))
+
+    # Delete all history
     if('all' in params and params['all'].lower()=="true"):
         PlotHistory.objects.filter(user=request.user).delete()
         return status.HTTP_200_OK
+    # Delete according to the query
     else:
         if('plot_id' in params):
             if(PlotHistory.objects.filter(user=request.user, pk=params['plot_id']).count()>0):

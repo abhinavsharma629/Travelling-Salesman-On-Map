@@ -18,10 +18,12 @@ from django.contrib.auth import authenticate,login,logout
 from .models import UserDetail, PlotHistory
 from .serializers import PlotHistorySerializer
 from .utils import add_plot_or_400, delete_plot_or_404
-
+from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
+import json
 
 # Main Page
-@login_required(login_url='/login')
+@login_required(login_url='/')
 def mainPage(request):
     return render(request, "mainApp/mainPage.html")
 
@@ -68,38 +70,59 @@ def validateUser(request):
         return Response({"message":"No Such User Exists", "status":"404"})
 
 
-class historyManagement(APIView):
+class historyManagement(LoginRequiredMixin, View):
+    login_url = '/'
+    redirect_field_name = 'redirect_to'
 
     #GET History
-    permission_classes=(IsAuthenticated,)
+    #permission_classes=(IsAuthenticated,)
     def get(self, request):
+        print(request.GET)
         try:
-            list=PlotHistory.objects.filter(user=request.user)
+            list=[]
+            if('plot_id' in request.GET):
+                list=PlotHistory.objects.filter(user=request.user, pk=request.GET('plot_id'))
+            else:
+                list=PlotHistory.objects.filter(user=request.user)
             serializer=PlotHistorySerializer(list, many=True)
-            return Response({"message":"Successfully Retrieved History", "list":serializer.data}, status=status.HTTP_200_OK)
+            print(serializer.data)
+            return JsonResponse({"message":"Successfully Retrieved History", "list":json.dumps(serializer.data), "status":"200"}, status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
-            return Response({"message": "Some Unexpected Error Occured"}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({"message": "Some Unexpected Error Occured", "status":"400"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-    permission_classes=(IsAuthenticated,)
+    #permission_classes=(IsAuthenticated,)
     # Plot SAVE
-    def post(self, request, format=None):
-        parser_classes = (JSONParser,)
+    def post(self, request):
+        #parser_classes = (JSONParser,)
         obj,status1=add_plot_or_400(request)
         if(status1==201):
-            serializer= PlotHistorySerializer(obj)
-            return Response({'message':"Successfully Saved Plot", "details":serializer.data}, status=status.HTTP_201_CREATED)
+            #serializer= PlotHistorySerializer(obj)
+            return HttpResponseRedirect('/showDirection/'+str(obj.id))
+            #return JsonResponse({'message':"Successfully Saved Plot", "details":json.dumps(serializer.data), "status":"201"}, status=status.HTTP_201_CREATED)
         else:
-            return Response({'message':"Error"}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'message':"Some Unexpected Error Occured While Saving The Points", "status":"400"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-    permission_classes=(IsAuthenticated,)
+    #permission_classes=(IsAuthenticated,)
     # Plot Delete
-    def delete(self, request, format=None):
-        parser_classes = (JSONParser,)
+    def delete(self, request):
+        print("deleting")
+        #parser_classes = (JSONParser,)
         status1=delete_plot_or_404(request)
         if(status1==200):
-            return Response({'message':"Successfully Deleted Plot History"}, status=status.HTTP_200_OK)
+            return JsonResponse({'message':"Successfully Deleted Plot History", "status":"200"}, status=status.HTTP_200_OK)
         else:
-            return Response({'message':"Error"}, status=status1)
+            return JsonResponse({'message':"Error", "status":"400"}, status=status1)
+
+
+@login_required(login_url='/')
+def showDirection(request, id):
+    print(id)
+    objects=PlotHistory.objects.filter(user=request.user, pk=id)
+    if(objects.count()>0):
+        args={"points":json.dumps(objects[0].points)}
+        return render(request, "mainApp/directionView.html", args)
+    else:
+        return JsonResponse({'message':"No Such Id Present", "status":"400"}, status=status.HTTP_400_BAD_REQUEST)

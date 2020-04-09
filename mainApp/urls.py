@@ -16,10 +16,12 @@ urlpatterns = [
     path("signup", TemplateView.as_view(template_name="mainApp/signup.html")),
     path("mainPage", views.mainPage, name="mainPage"),
     path("logout", LogoutView.as_view()),
+    path('historyManagement', historyManagement.as_view()),
+    path('showDirection/<id>', views.showDirection, name="showDirection"),
 
     # Api's
     path('api/createUser/', views.createUser, name="createUser"),
     path('api/validateUser/', views.validateUser, name="validateUser"),
-    path('historyManagement', historyManagement.as_view()),
+
 
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
